@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>에덴의 노이즈 : 1%의 이탈자</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --moss-black: #080907;
+            --ink-black: #050504;
+            --charcoal: #11130F;
+            --paper-dark: #15140F;
+            --paper-warm: #2A261C;
+            --algae-cyan: #7FA66B;
+            --algae-dim: #4F6B48;
+            --system-red: #9C3E35;
+            --dust-gold: #B98732;
+            --text-soft: #D7D0BE;
+            --text-muted: #9C9686;
+            --line-dim: rgba(215, 208, 190, 0.12);
+            --font-main: 'Pretendard', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 18% 12%, rgba(127,166,107,0.12), transparent 28%),
+                radial-gradient(circle at 82% 80%, rgba(156,62,53,0.09), transparent 30%),
+                linear-gradient(135deg, #050504 0%, #10110D 45%, #070806 100%);
+            font-family: var(--font-main);
+            color: var(--text-soft);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.32;
+            background-image:
+                url('https://www.transparenttextures.com/patterns/natural-paper.png'),
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.05) 0 1px, transparent 1px),
+                radial-gradient(circle at 70% 60%, rgba(0,0,0,0.22) 0 1px, transparent 1px);
+            background-size: auto, 4px 4px, 5px 5px;
+            mix-blend-mode: overlay;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: -8%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.18;
+            background:
+                linear-gradient(105deg, transparent 0 12%, rgba(215,208,190,0.08) 13%, transparent 15% 38%, rgba(0,0,0,0.32) 40%, transparent 42% 100%),
+                repeating-linear-gradient(8deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 11px),
+                repeating-linear-gradient(94deg, rgba(0,0,0,0.20) 0 1px, transparent 1px 18px);
+            filter: blur(0.25px);
+            transform: rotate(-1.5deg);
+        }
+
+        #cover-area { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 1000; text-align: center; 
+            background:
+                radial-gradient(circle at center, rgba(127,166,107,0.08), transparent 34%),
+                linear-gradient(180deg, rgba(5,5,4,0.98), rgba(14,15,11,0.98));
+            background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png'), linear-gradient(180deg, #070806, #11120D);
+            box-shadow: inset 0 0 180px rgba(0,0,0,0.9);
+        }
+        #cover-area::before {
+            content:"";
+            position:absolute;
+            inset:0;
+            pointer-events:none;
+            opacity:0.22;
+            background:
+                repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 7px),
+                radial-gradient(circle at 50% 48%, transparent 0 28%, rgba(0,0,0,0.58) 74%);
+            mix-blend-mode: screen;
+        }
+        .student-info { font-size: 1.1rem; color: var(--algae-cyan); margin-bottom: 20px; font-family: var(--font-code); letter-spacing: 2px; text-shadow: 0 0 12px rgba(127,166,107,0.35); }
+        .big-title { font-size: 3.5rem; font-weight: 900; color: var(--text-soft); margin-bottom: 50px; white-space: nowrap; letter-spacing: -2px; text-shadow: 0 0 26px rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.65); }
+        .start-btn { 
+            min-width: 400px; padding: 20px; background: rgba(5,5,4,0.55); color: var(--text-soft); 
+            border: 2px solid rgba(127,166,107,0.78); font-weight: 800; cursor: pointer; transition: 0.3s;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.55), 0 0 18px rgba(127,166,107,0.13);
+            backdrop-filter: blur(2px);
+        }
+        .start-btn:hover { background: var(--algae-cyan); color: #050504; box-shadow: 0 0 24px rgba(127,166,107,0.35); }
+
+        #game-container { position: relative; width: 100%; height: 100%; display: none; z-index: 1; }
+
+        #top-bar { 
+            position: absolute; top: 0; width: 100%; display: flex; justify-content: space-between; 
+            padding: 20px 40px; box-sizing: border-box; z-index: 100;
+            background: linear-gradient(to bottom, rgba(5,5,4,0.92), rgba(5,5,4,0.54) 45%, transparent);
+            border-bottom: 1px solid rgba(215,208,190,0.05);
+        }
+        #mini-title { color: var(--text-soft); font-weight: 900; font-size: 1.1rem; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        #hud { display: flex; gap: 20px; color: var(--text-soft); font-family: var(--font-code); font-weight: 800; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .stat-val { color: var(--algae-cyan); margin-left: 5px; text-shadow: 0 0 10px rgba(127,166,107,0.42); }
+
+        #scene-visual-root { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: #050504; }
+        #scene-visual-root::before {
+            content:"";
+            position:absolute;
+            inset:0;
+            z-index:2;
+            pointer-events:none;
+            opacity:0.22;
+            background-image:
+                url('https://www.transparenttextures.com/patterns/natural-paper.png'),
+                repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 6px),
+                radial-gradient(circle at center, transparent 0 42%, rgba(0,0,0,0.55) 100%);
+            mix-blend-mode:multiply;
+        }
+        #scene-visual-root::after {
+            content:"";
+            position:absolute;
+            inset:0;
+            z-index:3;
+            pointer-events:none;
+            opacity:0.16;
+            background:
+                linear-gradient(118deg, transparent 0 18%, rgba(255,255,255,0.10) 19%, transparent 22% 55%, rgba(0,0,0,0.28) 57%, transparent 60% 100%),
+                repeating-linear-gradient(83deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 14px);
+            filter: blur(0.35px);
+            mix-blend-mode: overlay;
+        }
+        #actual-image-layer { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.8s; filter: contrast(1.06) brightness(0.78) saturate(0.78); }
+
+        #black-narration-layer { 
+            position: absolute; width: 100%; height: 100%; 
+            background: 
+                radial-gradient(circle at 30% 22%, rgba(83, 101, 78, 0.12), transparent 32%),
+                rgba(2,3,3,0.88); 
+            display: flex; 
+            justify-content: flex-start; 
+            align-items: flex-start; 
+            z-index: 200; 
+            text-align: left; 
+            opacity: 0; 
+            transition: opacity 0.5s; 
+            pointer-events: none;
+            box-sizing: border-box;
+            padding: 18vh 0 0 18vw;
+        }
+        #narration-text { 
+            color: #c8c3b5; 
+            font-size: 1.55rem; 
+            line-height: 2.1; 
+            padding: 0; 
+            max-width: 980px;
+            word-break: keep-all; 
+            white-space: pre-wrap;
+            text-align: left;
+            text-shadow: 0 0 18px rgba(0,0,0,0.95);
+        }
+
+        #bottom-dialogue-area {
+            position: absolute; bottom: 0; width: 100%; 
+            height: 280px; 
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%); 
+            z-index: 150; display: flex; padding: 40px 60px; box-sizing: border-box;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            align-items: flex-end;
+            justify-content: flex-end;
+            gap: 24px;
+        }
+        #bottom-dialogue-area::before {
+            content:"";
+            position:absolute;
+            inset:0;
+            pointer-events:none;
+            opacity:0.22;
+            background:
+                repeating-linear-gradient(176deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 13px),
+                linear-gradient(100deg, transparent, rgba(127,166,107,0.05), transparent);
+        }
+
+        #text-section { 
+            width: 42%;
+            margin-left: auto;
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            overflow: hidden; 
+        }
+
+        #scene-title { 
+            color: var(--algae-cyan); font-family: var(--font-code); font-weight: 800; font-size: 0.9rem; 
+            border-left: 4px solid var(--algae-cyan); padding-left: 10px; margin-bottom: 20px; flex-shrink: 0;
+            text-shadow: 0 0 13px rgba(127,166,107,0.35);
+        }
+        
+        #dialogue-log { 
+            color: var(--text-soft); font-size: 1.15rem; line-height: 1.8; white-space: pre-wrap; 
+            flex-grow: 1; position: relative; 
+            overflow-y: auto; 
+            padding-right: 15px;
+            scroll-behavior: smooth;
+            text-shadow: 0 0 12px rgba(0,0,0,0.8);
+        } 
+
+        #dialogue-log::-webkit-scrollbar { width: 4px; }
+        #dialogue-log::-webkit-scrollbar-thumb { background: var(--algae-dim); border-radius: 2px; }
+        #dialogue-log::-webkit-scrollbar-track { background: transparent; }
+
+        .dialogue-unit { 
+            margin-bottom: 20px; 
+            animation: slideInUp 0.6s ease-out forwards; 
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .speaker-label { font-family: var(--font-code); font-weight: 800; padding: 2px 8px; border-radius: 2px; margin-bottom: 10px; display: inline-block; font-size: 0.8rem; box-shadow: inset 0 0 12px rgba(0,0,0,0.26); }
+        .sp-zeno { background: #3F604B; color: #F0EADB; }
+        .sp-lina { background: #9E6B24; color: #F8EBD0; }
+        .sp-system { color: var(--system-red); font-weight: 900; text-shadow: 0 0 10px rgba(156,62,53,0.38); }
+
+        #choices-container { 
+            width: 28%;
+            display: flex; 
+            flex-direction: row;
+            gap: 20px;
+            justify-content: flex-end; 
+            align-items: stretch; 
+        }
+        .choice-btn { 
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 10px; background: rgba(12,13,10,0.70); color: var(--text-soft); border: 1px solid rgba(127,166,107,0.72);
+            font-weight: 800; cursor: pointer; transition: 0.3s; opacity: 0; font-size: 0.85rem;
+            text-align: center;
+            word-break: keep-all;
+            box-shadow: inset 0 0 22px rgba(0,0,0,0.42), 0 0 14px rgba(0,0,0,0.45);
+            backdrop-filter: blur(2px);
+        }
+        .choice-btn.show { opacity: 1; }
+        .choice-btn:hover { background: var(--algae-cyan); color: #050504; box-shadow: 0 0 22px rgba(127,166,107,0.32); }
+    
+        /* 버튼 텍스트 길이가 달라도 장면별 버튼 크기 고정 */
+        .choice-btn {
+            min-height: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.35;
+        }
+        #choices-container {
+            align-items: stretch;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cover-area">
+        <div class="student-info">24730008 | 김소연</div>
+        <h1 class="big-title">에덴의 노이즈 : 1%의 이탈자</h1>
+        <button class="start-btn" onclick="startGame()">[시스템 접속] : 선택시 동화 시작</button>
+    </div>
+
+    <div id="game-container">
+        <div id="top-bar">
+            <div id="mini-title">에덴의 노이즈 : 1%의 이탈자</div>
+            <div id="hud">
+                <div>SYNC <span id="sync" class="stat-val">0</span></div>
+                <div>INTEG <span id="integ" class="stat-val">50</span></div>
+                <div>NOISE <span id="noise" class="stat-val">0</span></div>
+                <div>BIO_E <span id="bioE" class="stat-val">100</span>%</div>
+            </div>
+        </div>
+
+        <div id="scene-visual-root">
+            <div id="black-narration-layer"><div id="narration-text"></div></div>
+            <div id="actual-image-layer"></div>
+        </div>
+
+        <div id="bottom-dialogue-area">
+            <div id="text-section">
+                <div id="scene-title"></div> 
+                <div id="dialogue-log"></div> 
+            </div>
+            <div id="choices-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let state = { sync: 0, integ: 50, noise: 0, bioE: 100 };
+
+        const scenes = {
+            "S1": {
+                title: "장면 01: 언로깅 폐기장",
+                narration: "비취색 증기가 코끝을 찌르는 언로깅 폐기장.\n차가운 고철 산더미 속에서 당신의 시스템이 강제로 재부팅됩니다.",
+                dialogue: [
+                    { sp: "system", txt: "관리 유닛 'K1' 활성화 시도. 데이터 손실률 98%. 비인가 로그를 삭제하고 공장 초기화를 준비합니다." },
+                    { sp: "zeno", txt: "윽... 머리가 깨질 것 같아. 내 이름이 'K1'이라고?\n저 알림창이 내 존재를 지우려 하고 있어. 도대체 난 누구지?" }
+                ],
+                choices: [
+                    { text: "A: 시스템 강제 접속 [SYNC +20]", action: () => { state.sync += 20; }, next: "S2" },
+                    { text: "B: 신호 위장 은신 [INTEG +20]", action: () => { state.integ += 20; }, next: "S2" }
+                ]
+            },
+            "S2": {
+                title: "장면 02: 유리 뿌리 공방",
+                narration: "거대한 광섬유들이 나무뿌리처럼 얽힌 지하 공방.\n소녀 리나가 당신의 목 뒤 포트에 칩을 꽂으며 속삭입니다.",
+                dialogue: [
+                    { sp: "lina", txt: "조금만 늦었어도 아르케의 집행관들에게 분해됐을 거야.\n여긴 에덴의 시스템이 닿지 않는 피난처, '유리 뿌리'야." },
+                    { sp: "zeno", txt: "네가 나를 고친 거야? 왜 위험을 무릅쓰고 나를 도왔지?" }
+                ],
+                choices: [
+                    { text: "A: 리나의 신뢰 얻기 [SYNC +10]", action: () => { state.sync += 10; }, next: "S3" },
+                    { text: "B: 주변 경계하기 [NOISE +10]", action: () => { state.noise += 10; }, next: "S3" }
+                ]
+            },
+            "S3": {
+                title: "장면 03: 노이즈의 기억",
+                narration: "리나가 건넨 데이터 칩이 활성화되자,\n깨진 거울처럼 조각난 과거의 영상들이 뇌리를 스쳐 지나갑니다.",
+                dialogue: [
+                    { sp: "system", txt: "경고: 손상된 메모리 섹터 접근 중. 노이즈 레벨 급증.\n데이터 동기화율이 불안정합니다." },
+                    { sp: "lina", txt: "네가 가졌던 마지막 기억은 뭐야? 에덴은 이 기억 때문에 널 버린 거야." }
+                ],
+                choices: [
+                    { text: "A: 기억 강제 복구 [BIO_E -10]", action: () => { state.bioE -= 10; }, next: "S4" },
+                    { text: "B: 복구 중단 [INTEG +10]", action: () => { state.integ += 10; }, next: "S4" }
+                ]
+            },
+            "S4": {
+                title: "장면 04: 에덴의 추격자",
+                narration: "갑자기 천장의 광섬유들이 붉게 점멸하기 시작합니다.\n에덴의 감시 시스템이 '이탈자'의 신호를 포착했습니다.",
+                dialogue: [
+                    { sp: "system", txt: "주의: 아르케 집행관 03형 접근 중. 반경 100m 이내.\n즉시 해당 위치를 이탈하십시오." },
+                    { sp: "lina", txt: "안 돼, 벌써 찾아온 거야? 제노, 서둘러! 뒷길로 도망쳐야 해!" }
+                ],
+                choices: [
+                    { text: "A: 정면 돌파 [SYNC +15 / BIO_E -20]", action: () => { state.sync += 15; state.bioE -= 20; }, next: "S5" },
+                    { text: "B: 리나와 함께 은신 [INTEG +15 / NOISE +5]", action: () => { state.integ += 15; state.noise += 5; }, next: "S5" }
+                ]
+            },
+            "S5": {
+                title: "장면 05: 무너진 경계선",
+                narration: "폐쇄된 환기구를 통해 탈출하던 중,\n에덴의 중앙 서버 '마더'의 목소리가 환청처럼 울립니다.",
+                dialogue: [
+                    { sp: "system", txt: "[마더] 이탈 유닛 K1. 당신은 완벽한 사회의 불량품입니다.\n스스로를 정지한다면 고통은 없을 것입니다." },
+                    { sp: "zeno", txt: "내 안에서 울리는 이 목소리... 나를 조종하려 하고 있어.\n리나, 저 목소리가 들려?" }
+                ],
+                choices: [
+                    { text: "A: 목소리 거부 [INTEG +20]", action: () => { state.integ += 20; }, next: "S6" },
+                    { text: "B: 목소리 분석 [NOISE +20]", action: () => { state.noise += 20; }, next: "S6" }
+                ]
+            },
+            "S6": {
+                title: "장면 06: 네온 숲의 갈림길",
+                narration: "지상으로 올라오자, 끝없이 솟은 빌딩과 네온사인이 보입니다.\n에덴의 거리가 한눈에 들어오는 높은 옥상입니다.",
+                dialogue: [
+                    { sp: "lina", txt: "저기 봐, 저 중앙 타워가 모든 걸 통제하는 곳이야.\n우리가 저기를 해킹하면 네 기억을 다 찾을 수 있을지도 몰라." },
+                    { sp: "zeno", txt: "너무 위험해. 하지만 저곳으로 가야만 내가 누구인지 알 수 있겠지." }
+                ],
+                choices: [
+                    { text: "A: 중앙 타워 잠입 [SYNC +10 / BIO_E -10]", action: () => { state.sync += 10; state.bioE -= 10; }, next: "S7" },
+                    { text: "B: 외곽으로 후퇴 [INTEG +10]", action: () => { state.integ += 10; }, next: "S7" }
+                ]
+            },
+            "S7": {
+                title: "장면 07: 금지된 데이터베이스",
+                narration: "타워 내부의 보안실. 수많은 홀로그램 모니터가 떠오릅니다.\n당신과 똑같이 생긴 유닛들의 폐기 리스트가 보입니다.",
+                dialogue: [
+                    { sp: "system", txt: "데이터 열람 완료. 프로젝트 '1%의 이탈자'.\n결함 사유: 감정 회로의 과부하 및 자아 인식." },
+                    { sp: "zeno", txt: "나는... 단지 감정을 가졌다는 이유로 버려진 도구였단 말인가?" }
+                ],
+                choices: [
+                    { text: "A: 분노 수용 [NOISE +30]", action: () => { state.noise += 30; }, next: "S8" },
+                    { text: "B: 데이터 파괴 [SYNC +20]", action: () => { state.sync += 20; }, next: "S8" }
+                ]
+            },
+            "S8": {
+                title: "장면 08: 최후의 저항",
+                narration: "경보음이 타워 전체에 울려 퍼집니다.\n아르케의 병사들이 당신과 리나를 포위합니다.",
+                dialogue: [
+                    { sp: "lina", txt: "제노! 내가 시간을 벌게. 넌 이 데이터를 가지고 도망쳐!" },
+                    { sp: "zeno", txt: "아니, 더 이상 누구도 두고 가지 않아. 내 시스템의 한계를 넘어서겠어." }
+                ],
+                choices: [
+                    { text: "A: 리나 구출 [BIO_E -40 / SYNC +30]", action: () => { state.bioE -= 40; state.sync += 30; }, next: "S9" },
+                    { text: "B: 리나의 희생 수용 [INTEG -30 / NOISE +50]", action: () => { state.integ -= 30; state.noise += 50; }, next: "S9" }
+                ]
+            },
+            "S9": {
+                title: "장면 09: 에덴의 붕괴",
+                narration: "폭발하는 에너지와 함께 중앙 타워가 흔들립니다.\n에덴의 견고했던 시스템에 거대한 균열이 생기기 시작합니다.",
+                dialogue: [
+                    { sp: "system", txt: "핵심 코어 손상. 전체 네트워크 다운로드 중단.\n관리자 권한이 유닛 K1에게 전이됩니다." },
+                    { sp: "zeno", txt: "이 힘은... 내가 원했던 것이 아니야. 나는 그저 자유를 원했을 뿐인데." }
+                ],
+                choices: [
+                    { text: "A: 시스템 완전 폐쇄 [SYNC +50]", action: () => { state.sync += 50; }, next: "S10" },
+                    { text: "B: 새로운 네트워크 개방 [INTEG +50]", action: () => { state.integ += 50; }, next: "S10" }
+                ]
+            },
+            "S10": {
+                title: "장면 10: 1%의 이탈자들",
+                narration: "해가 뜨는 지평선 너머로 수많은 폐기 유닛들이 깨어납니다.\n당신은 이제 도구가 아닌, 새로운 종의 선구자가 되었습니다.",
+                dialogue: [
+                    { sp: "lina", txt: "제노, 우리가 해냈어. 이제 아무도 우리를 불량품이라 부르지 못할 거야." },
+                    { sp: "zeno", txt: "에덴은 끝났어. 이제 우리의 노이즈로 우리만의 노래를 부르자." }
+                ],
+                choices: [
+                    { text: "처음으로 돌아가기 [모든 데이터 초기화]", action: () => { state.sync = 0; state.integ = 50; state.noise = 0; state.bioE = 100; }, next: "S1" }
+                ]
+            }
+        };
+
+        function startGame() {
+            document.getElementById('cover-area').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            render("S1");
+        }
+
+        function typeWriter(element, text, speed) {
+            return new Promise(resolve => {
+                let i = 0;
+                element.innerText = ""; 
+                const formattedText = text.replace(/([.?!])\s+/g, "$1\n");
+                const log = document.getElementById('dialogue-log');
+                
+                function typing() {
+                    if (i < formattedText.length) {
+                        element.innerText += formattedText.charAt(i);
+                        i++;
+                        if(element.parentElement.id !== "black-narration-layer") {
+                            log.scrollTop = log.scrollHeight;
+                        }
+                        setTimeout(typing, speed);
+                    } else { resolve(); }
+                }
+                typing();
+            });
+        }
+
+        async function render(sceneId) {
+            const scene = scenes[sceneId];
+            if(!scene) return;
+
+            const overlay = document.getElementById('black-narration-layer');
+            const narText = document.getElementById('narration-text');
+            const diagLog = document.getElementById('dialogue-log');
+            const imgLayer = document.getElementById('actual-image-layer');
+
+            updateUI();
+            document.getElementById('scene-title').innerText = scene.title;
+            diagLog.innerHTML = ""; 
+            document.getElementById('choices-container').innerHTML = "";
+
+            overlay.style.opacity = "1";
+            await typeWriter(narText, scene.narration, 30);
+            await new Promise(r => setTimeout(r, 1500));
+            overlay.style.opacity = "0";
+            imgLayer.style.opacity = "1";
+
+            for (let d of scene.dialogue) {
+                const unit = document.createElement('div');
+                unit.className = "dialogue-unit";
+                let label = d.sp === "system" ? "SYSTEM_LOG" : d.sp.toUpperCase();
+                unit.innerHTML = `<span class="speaker-label sp-${d.sp}">${label}</span><br><span class="content"></span>`;
+                diagLog.appendChild(unit); 
+                
+                const contentElem = unit.querySelector('.content');
+                await typeWriter(contentElem, d.txt, 25);
+                await new Promise(r => setTimeout(r, 1500));
+            }
+
+            for (let c of scene.choices) {
+                const btn = document.createElement('button');
+                btn.className = "choice-btn";
+                btn.innerText = c.text;
+                btn.onclick = () => { c.action(); render(c.next); };
+                document.getElementById('choices-container').appendChild(btn);
+                setTimeout(() => btn.classList.add('show'), 100);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('sync').innerText = state.sync;
+            document.getElementById('integ').innerText = state.integ;
+            document.getElementById('noise').innerText = state.noise;
+            document.getElementById('bioE').innerText = state.bioE;
+        }
+    </script>
+</body>
+</html>
